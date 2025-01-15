@@ -7,8 +7,13 @@ import {
   useLocalRuntime,
   type ChatModelAdapter,
 } from "@assistant-ui/react";
+import { v4 as uuidv4 } from "uuid";
 
-const MyModelAdapter: ChatModelAdapter = {
+interface MyModelAdapterOptions {
+  sessionId: string;
+}
+
+const createMyModelAdapter = ({ sessionId }: MyModelAdapterOptions): ChatModelAdapter => ({
   async *run({ messages, abortSignal }) {
     const lastMessage = messages[messages.length - 1];
     const input_value = lastMessage.content
@@ -23,7 +28,7 @@ const MyModelAdapter: ChatModelAdapter = {
       },
       body: JSON.stringify({
         input_value,
-        session_id: "A0005",
+        session_id: sessionId,
         output_type: "chat",
         input_type: "chat"
       }),
@@ -40,7 +45,7 @@ const MyModelAdapter: ChatModelAdapter = {
       }]
     };
   }
-};
+});
 
 import { createContext, useContext } from "react";
 const RuntimeContext = createContext<ReturnType<typeof useLocalRuntime> | undefined>(undefined);
@@ -58,18 +63,19 @@ export function MyRuntimeProvider({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const runtime = useLocalRuntime(MyModelAdapter);
+  const sessionId = React.useMemo(() => uuidv4(), []);
+  const runtime = useLocalRuntime(createMyModelAdapter({ sessionId }));
+
+  // Remove Dashlane attributes before React hydration
+  if (typeof window !== "undefined") {
+    const elements = document.querySelectorAll('[data-dashlane-rid], [data-dashlane-label]');
+    elements.forEach(el => {
+      el.removeAttribute('data-dashlane-rid');
+      el.removeAttribute('data-dashlane-label');
+    });
+  }
 
   React.useEffect(() => {
-    // Remove Dashlane attributes after hydration
-    const removeDashlaneAttributes = () => {
-      const elements = document.querySelectorAll('[data-dashlane-rid], [data-dashlane-label]');
-      elements.forEach(el => {
-        el.removeAttribute('data-dashlane-rid');
-        el.removeAttribute('data-dashlane-label');
-      });
-    };
-
     // Suppress hydration warnings for Dashlane attributes
     const originalConsoleError = console.error;
     console.error = (...args) => {
@@ -78,8 +84,6 @@ export function MyRuntimeProvider({
       }
       originalConsoleError.apply(console, args);
     };
-
-    removeDashlaneAttributes();
 
     return () => {
       console.error = originalConsoleError;

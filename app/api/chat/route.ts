@@ -1,10 +1,11 @@
 export const maxDuration = 30;
 
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 
 const requestSchema = z.object({
   input_value: z.string().min(1, "Message cannot be empty").default(""),
-  session_id: z.string().default("A0005"),
+  session_id: z.string().optional(),
   output_type: z.string().default("chat"),
   input_type: z.string().default("chat"),
   tweaks: z.record(z.any()).default({
@@ -41,7 +42,8 @@ export const POST = async (request: Request) => {
       );
     }
     
-    const { input_value, session_id, output_type, input_type, tweaks } = validation.data;
+    const { input_value, output_type, input_type, tweaks } = validation.data;
+    const session_id = validation.data.session_id || uuidv4();
     
     const apiResponse = await fetch("https://api.langflow.astra.datastax.com/lf/c299f9a6-d655-4b0d-896c-9654a3f02332/api/v1/run/aurora-ai-alpha?stream=false", {
       method: "POST",
@@ -51,7 +53,7 @@ export const POST = async (request: Request) => {
       },
       body: JSON.stringify({
         input_value,
-        session_id: session_id || "A0005",
+        session_id,
         output_type: output_type || "chat",
         input_type: input_type || "chat",
         tweaks: tweaks || {
@@ -62,7 +64,7 @@ export const POST = async (request: Request) => {
             credentials_profile_name: "",
             endpoint_url: "",
             input_value: "",
-            model_id: "us.meta.llama3-2-3b-instruct-v1:0",
+            model_id: "meta.llama3-3-70b-instruct-v1:0",
             model_kwargs: {},
             region_name: "us-east-2",
             stream: false,
