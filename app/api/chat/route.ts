@@ -47,7 +47,7 @@ export const POST = async (request: Request) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer AstraCS:jJzBWQQaoNooKdmzXSOZzDZG:2922018b68ec139936251b026ee0ef47adaeb357bb3af1e61e42c4809118ab83"
+        "Authorization": `Bearer ${process.env.CUSTOM_TOKEN}`
       },
       body: JSON.stringify({
         input_value,
